@@ -78,6 +78,7 @@ class TableLoadingConfig:
     create_indexes: Dict[str, List[str]] = None
     dtype_overrides: Dict[str, Dict[str, str]] = None
     enable_sanitization: bool = True
+    table_prefix: str = ""  # Prefix to add to all table names (e.g., "tbl_")
 
     def __post_init__(self):
         if self.custom_table_names is None:
@@ -86,6 +87,9 @@ class TableLoadingConfig:
             self.create_indexes = {}
         if self.dtype_overrides is None:
             self.dtype_overrides = {}
+        # Normalize table_prefix (treat None as empty string)
+        if self.table_prefix is None:
+            self.table_prefix = ""
 
 
 class CSVToMSSQLLoader:
@@ -211,7 +215,8 @@ class CSVToMSSQLLoader:
             custom_table_names=tl.get('custom_table_names', {}),
             create_indexes=tl.get('create_indexes', {}),
             dtype_overrides=tl.get('dtype_overrides', {}),
-            enable_sanitization=tl.get('enable_sanitization', True)
+            enable_sanitization=tl.get('enable_sanitization', True),
+            table_prefix=tl.get('table_prefix', '')
         )
 
     def _setup_sanitizer(self) -> FilenameSanitizer:
@@ -249,6 +254,37 @@ class CSVToMSSQLLoader:
 
         self.logger.debug("Filename sanitizer initialized")
         return sanitizer
+
+    def _sanitize_prefix(self, prefix: str) -> str:
+        """
+        Sanitize and validate table prefix for SQL Server compliance.
+
+        Only allows alphanumeric characters and underscores (strict mode).
+        If prefix starts with a digit, prepends an underscore.
+
+        Args:
+            prefix: Raw prefix from configuration
+
+        Returns:
+            Sanitized prefix safe for SQL Server
+        """
+        if not prefix:
+            return ""
+
+        # Remove all characters except alphanumeric and underscore (strict mode)
+        sanitized = re.sub(r'[^\w]', '', prefix)
+
+        # Ensure prefix doesn't start with a digit
+        if sanitized and sanitized[0].isdigit():
+            sanitized = '_' + sanitized
+
+        # Log if prefix was modified
+        if sanitized != prefix:
+            self.logger.warning(
+                f"Table prefix sanitized for SQL Server compliance: '{prefix}' → '{sanitized}'"
+            )
+
+        return sanitized
 
     def _create_connection_string(self) -> str:
         """
@@ -427,11 +463,36 @@ class CSVToMSSQLLoader:
             if original_name != table_name:
                 self.logger.info(f"Sanitized table name: '{original_name}' → '{table_name}'")
 
-            # Validate the sanitized name
-            if not self.sanitizer.validate_table_name(table_name):
-                self.logger.warning(
-                    f"Sanitized table name '{table_name}' may not be valid for SQL Server"
-                )
+        # Apply table prefix if configured
+        if self.table_config.table_prefix:
+            # Sanitize the prefix to ensure SQL Server compliance
+            sanitized_prefix = self._sanitize_prefix(self.table_config.table_prefix)
+
+            if sanitized_prefix:
+                original_table_name = table_name
+
+                # Calculate max base name length to stay within SQL Server's 128 char limit
+                max_base_length = 128 - len(sanitized_prefix)
+
+                # Truncate base name if necessary to preserve full prefix
+                if len(table_name) > max_base_length:
+                    self.logger.warning(
+                        f"Table name '{table_name}' is too long with prefix '{sanitized_prefix}'. "
+                        f"Truncating base name from {len(table_name)} to {max_base_length} characters."
+                    )
+                    table_name = table_name[:max_base_length]
+
+                # Apply prefix
+                table_name = f"{sanitized_prefix}{table_name}"
+
+                # Log prefix application
+                self.logger.info(f"Applied table prefix: '{original_table_name}' → '{table_name}'")
+
+        # Validate the final table name (including prefix)
+        if not self.sanitizer.validate_table_name(table_name):
+            self.logger.warning(
+                f"Table name '{table_name}' may not be valid for SQL Server"
+            )
 
         return table_name
 
@@ -488,13 +549,33 @@ class CSVToMSSQLLoader:
         """
         Create indexes on specified columns for a table.
 
-        Args:
-            table_name: Table name to create indexes on
-        """
-        if table_name not in self.table_config.create_indexes:
-            return
+        Supports both prefixed and base table names in configuration.
+        First tries to find index config by the full table name (with prefix),
+        then falls back to base name (without prefix) for backward compatibility.
 
-        columns = self.table_config.create_indexes[table_name]
+        Args:
+            table_name: Final table name (already includes prefix if configured)
+        """
+        # Try to find index config by full name first
+        columns = None
+
+        if table_name in self.table_config.create_indexes:
+            columns = self.table_config.create_indexes[table_name]
+        # If not found and we have a prefix, try looking up by base name
+        elif self.table_config.table_prefix:
+            sanitized_prefix = self._sanitize_prefix(self.table_config.table_prefix)
+            if sanitized_prefix and table_name.startswith(sanitized_prefix):
+                # Extract base name by removing prefix
+                base_name = table_name[len(sanitized_prefix):]
+                if base_name in self.table_config.create_indexes:
+                    columns = self.table_config.create_indexes[base_name]
+                    self.logger.debug(
+                        f"Found index config for base name '{base_name}' "
+                        f"(full table: '{table_name}')"
+                    )
+
+        if not columns:
+            return
 
         try:
             with self.engine.connect() as conn:

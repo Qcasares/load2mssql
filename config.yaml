@@ -92,6 +92,13 @@ table_loading:
   # Set to false to disable sanitization and use raw filenames
   enable_sanitization: true
 
+  # Table name prefix (applied to all tables after sanitization)
+  # Leave empty ("") for no prefix, or specify a prefix like "tbl_", "stg_", "dim_"
+  # Only alphanumeric characters and underscores allowed
+  # Examples: "tbl_" → table "CustomerAccount" becomes "tbl_CustomerAccount"
+  #           "staging_" → table "Sales" becomes "staging_Sales"
+  table_prefix: ""
+
   # Custom table name mapping (only used when table_naming is 'custom')
   # Format: csv_filename: table_name
   custom_table_names:
