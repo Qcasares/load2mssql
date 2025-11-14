@@ -1,0 +1,25 @@
+# Core Dependencies for CSV to MS SQL Server Loader
+# ===================================================
+
+# Data processing and manipulation
+pandas>=2.2.0
+
+# SQL Server connectivity
+pyodbc>=5.0.0
+sqlalchemy>=2.0.0
+
+# YAML configuration file parsing
+pyyaml>=6.0.1
+
+# Optional: For better performance with large datasets
+# numpy>=1.26.0
+
+# Optional: For progress bars (uncomment if desired)
+# tqdm>=4.66.0
+
+# Development dependencies (uncomment for development)
+# pytest>=8.0.0
+# pytest-cov>=4.1.0
+# black>=24.0.0
+# pylint>=3.0.0
+# mypy>=1.8.0

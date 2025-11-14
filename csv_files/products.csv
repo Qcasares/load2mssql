@@ -1,0 +1,11 @@
+ProductID,ProductName,Category,SupplierID,UnitPrice,UnitsInStock,ReorderLevel
+P001,Laptop,Electronics,S001,1200.00,50,10
+P002,Mouse,Electronics,S002,25.50,200,20
+P003,Keyboard,Electronics,S002,75.00,150,15
+P004,Monitor,Electronics,S001,350.00,75,10
+P005,USB Cable,Accessories,S003,5.99,500,50
+P006,HDMI Cable,Accessories,S003,12.99,300,30
+P007,Webcam,Electronics,S001,89.99,100,15
+P008,Desk Lamp,Office,S004,45.00,80,10
+P009,Office Chair,Office,S004,250.00,40,5
+P010,Desk,Office,S004,450.00,25,5
