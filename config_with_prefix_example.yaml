@@ -1,0 +1,92 @@
+# Configuration file for CSV to MS SQL Server loader
+# Example configuration with table prefix enabled
+# =======================================================
+
+# Database Configuration
+# -----------------------
+database:
+  server: "localhost"
+  database: "YourDatabase"
+  auth_mode: "trusted"
+  username: ""
+  password: ""
+  driver: "ODBC Driver 17 for SQL Server"
+  timeout: 30
+  fast_executemany: true
+
+
+# CSV File Processing Configuration
+# ----------------------------------
+csv_processing:
+  input_folder: "./csv_files"
+  skip_header_rows: 0
+  skip_footer_rows: 0
+  encoding: "utf-8"
+  delimiter: ","
+  chunk_size: 10000
+
+
+# File Selection Mode
+# --------------------
+file_selection:
+  mode: "all"
+  selected_files:
+    - "file1.csv"
+    - "file2.csv"
+
+
+# Table Loading Configuration
+# ----------------------------
+table_loading:
+  if_exists: "replace"
+  schema: "dbo"
+  table_naming: "filename"
+  enable_sanitization: true
+
+  # EXAMPLE: Table prefix configuration
+  # This will prefix all table names with "tbl_"
+  # CustomerAccount_2025-10-09_183621.csv → tbl_CustomerAccount
+  # OrderHistory_20251114_093000.csv → tbl_OrderHistory
+  table_prefix: "tbl_"
+
+  # Custom table name mapping (only used when table_naming is 'custom')
+  # Note: Prefix will be applied to custom names as well
+  custom_table_names:
+    "sales_data.csv": "Sales"  # Will become "tbl_Sales"
+    "customer_info.csv": "Customers"  # Will become "tbl_Customers"
+
+  # Create indexes on specific columns after loading (optional)
+  # Use base table names (without prefix) - prefix is applied automatically
+  create_indexes:
+    CustomerAccount: ["CustomerID"]  # Creates index on tbl_CustomerAccount
+    OrderHistory: ["OrderID"]  # Creates index on tbl_OrderHistory
+
+  # Data type overrides (optional)
+  dtype_overrides:
+    # Use base table names here as well
+    # Sales:
+    #   OrderID: "INT"
+    #   OrderDate: "DATETIME"
+    #   Amount: "DECIMAL(18,2)"
+
+
+# Filename Sanitization Configuration (Optional)
+# -----------------------------------------------
+filename_sanitization:
+  use_pascal_case: true
+  max_length: 128
+  custom_patterns:
+    # - "_production$"
+    # - "_staging$"
+  custom_replacements:
+    # "cust": "Customer"
+    # "acct": "Account"
+
+
+# Logging Configuration
+# ----------------------
+logging:
+  level: "INFO"
+  log_file: "csv_loader.log"
+  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+  date_format: "%Y-%m-%d %H:%M:%S"
