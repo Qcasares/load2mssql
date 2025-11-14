@@ -104,16 +104,26 @@ python filename_sanitizer.py
 **Windows Authentication (Recommended)**:
 ```yaml
 database:
+  server: "localhost"
+  port: 1433  # Default SQL Server port (optional)
   auth_mode: "trusted"
 ```
 
 **SQL Server Authentication**:
 ```yaml
 database:
+  server: "localhost"
+  port: 1433  # Specify custom port if needed
   auth_mode: "sql"
   username: "your_username"
   password: "your_password"
 ```
+
+**Custom Port Configuration**:
+- Default port: 1433 (standard SQL Server)
+- Specify custom port for non-standard installations
+- Port is optional in config (defaults to 1433)
+- SQL Server connection format: `server,port` (e.g., `localhost,1434`)
 
 ### File Selection Patterns
 

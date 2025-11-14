@@ -6,6 +6,7 @@
 # -----------------------
 database:
   server: "localhost"
+  port: 1433  # Default SQL Server port (optional, defaults to 1433)
   database: "YourDatabase"
   auth_mode: "trusted"
   username: ""
