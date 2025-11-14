@@ -1,0 +1,127 @@
+# Configuration file for CSV to MS SQL Server loader
+# =======================================================
+
+# Database Configuration
+# -----------------------
+database:
+  # SQL Server instance (use 'localhost' or '127.0.0.1' for local instance)
+  server: "localhost"
+
+  # Database name where tables will be created/updated
+  database: "YourDatabase"
+
+  # Authentication mode: 'trusted' for Windows Authentication, 'sql' for SQL Server Authentication
+  # Trusted authentication uses the current Windows user credentials
+  auth_mode: "trusted"
+
+  # Only required if auth_mode is 'sql' (leave empty for trusted authentication)
+  username: ""
+  password: ""
+
+  # Driver name (ODBC Driver 17 or 18 for SQL Server is recommended)
+  driver: "ODBC Driver 17 for SQL Server"
+
+  # Connection timeout in seconds
+  timeout: 30
+
+  # Enable/disable fast executemany (improves bulk insert performance)
+  fast_executemany: true
+
+
+# CSV File Processing Configuration
+# ----------------------------------
+csv_processing:
+  # Folder containing CSV files to process
+  input_folder: "./csv_files"
+
+  # Number of header rows to skip (metadata at the top of the file)
+  # Set to 0 if no header metadata to skip
+  skip_header_rows: 0
+
+  # Number of footer rows to skip (metadata at the bottom of the file)
+  # Set to 0 if no footer metadata to skip
+  skip_footer_rows: 0
+
+  # Encoding of the CSV files (common: 'utf-8', 'latin1', 'cp1252')
+  encoding: "utf-8"
+
+  # CSV delimiter (common: ',', ';', '\t')
+  delimiter: ","
+
+  # How to handle missing values in CSV
+  # null_values: ['', 'NA', 'N/A', 'NULL', 'null', 'None']
+
+  # Chunk size for reading large CSV files (rows per chunk)
+  # Useful for processing large files without memory issues
+  chunk_size: 10000
+
+
+# File Selection Mode
+# --------------------
+file_selection:
+  # Mode: 'all' to process all CSV files in input_folder
+  #       'selected' to process only files listed below
+  mode: "all"
+
+  # List of specific files to process (only used when mode is 'selected')
+  # File names should be relative to input_folder
+  selected_files:
+    - "file1.csv"
+    - "file2.csv"
+    # - "file3.csv"
+
+
+# Table Loading Configuration
+# ----------------------------
+table_loading:
+  # How to handle existing tables: 'fail', 'replace', 'append'
+  # - fail: Raise an error if table exists
+  # - replace: Drop and recreate the table
+  # - append: Append data to existing table
+  if_exists: "replace"
+
+  # Schema name (use 'dbo' for default schema)
+  schema: "dbo"
+
+  # Table naming strategy: 'filename' or 'custom'
+  # - filename: Use CSV filename as table name (without .csv extension)
+  # - custom: Use custom mapping defined below
+  table_naming: "filename"
+
+  # Custom table name mapping (only used when table_naming is 'custom')
+  # Format: csv_filename: table_name
+  custom_table_names:
+    "sales_data.csv": "Sales"
+    "customer_info.csv": "Customers"
+
+  # Create indexes on specific columns after loading (optional)
+  # Format: table_name: [column1, column2, ...]
+  create_indexes:
+    # Sales: ["OrderID", "CustomerID"]
+    # Customers: ["CustomerID"]
+
+  # Data type overrides (optional)
+  # By default, pandas infers data types automatically
+  # Use this to force specific SQL Server data types
+  # Format: table_name: {column_name: sql_type}
+  dtype_overrides:
+    # Sales:
+    #   OrderID: "INT"
+    #   OrderDate: "DATETIME"
+    #   Amount: "DECIMAL(18,2)"
+
+
+# Logging Configuration
+# ----------------------
+logging:
+  # Log level: DEBUG, INFO, WARNING, ERROR, CRITICAL
+  level: "INFO"
+
+  # Log file path (set to null or empty string to disable file logging)
+  log_file: "csv_loader.log"
+
+  # Log format
+  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+
+  # Date format for log timestamps
+  date_format: "%Y-%m-%d %H:%M:%S"
