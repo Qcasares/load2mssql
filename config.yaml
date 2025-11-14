@@ -88,6 +88,10 @@ table_loading:
   # - custom: Use custom mapping defined below
   table_naming: "filename"
 
+  # Enable filename sanitization (removes timestamps, dates, special chars)
+  # Set to false to disable sanitization and use raw filenames
+  enable_sanitization: true
+
   # Custom table name mapping (only used when table_naming is 'custom')
   # Format: csv_filename: table_name
   custom_table_names:
@@ -109,6 +113,29 @@ table_loading:
     #   OrderID: "INT"
     #   OrderDate: "DATETIME"
     #   Amount: "DECIMAL(18,2)"
+
+
+# Filename Sanitization Configuration (Optional)
+# -----------------------------------------------
+# Configure how filenames are sanitized to create table names
+filename_sanitization:
+  # Convert table names to PascalCase (true) or preserve original case (false)
+  use_pascal_case: true
+
+  # Maximum table name length (SQL Server limit is 128)
+  max_length: 128
+
+  # Custom patterns to strip from filenames (in addition to defaults)
+  # Uses Python regular expressions
+  custom_patterns:
+    # - "_production$"
+    # - "_staging$"
+
+  # Custom string replacements (applied before pattern stripping)
+  # Format: pattern: replacement
+  custom_replacements:
+    # "cust": "Customer"
+    # "acct": "Account"
 
 
 # Logging Configuration

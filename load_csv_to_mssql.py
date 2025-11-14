@@ -34,6 +34,8 @@ from sqlalchemy.engine import Engine
 from sqlalchemy.exc import SQLAlchemyError
 import pyodbc
 
+from filename_sanitizer import FilenameSanitizer, SanitizationRules
+
 
 @dataclass
 class DatabaseConfig:
@@ -75,6 +77,7 @@ class TableLoadingConfig:
     custom_table_names: Dict[str, str] = None
     create_indexes: Dict[str, List[str]] = None
     dtype_overrides: Dict[str, Dict[str, str]] = None
+    enable_sanitization: bool = True
 
     def __post_init__(self):
         if self.custom_table_names is None:
@@ -119,6 +122,9 @@ class CSVToMSSQLLoader:
         self.csv_config = self._parse_csv_config()
         self.file_config = self._parse_file_config()
         self.table_config = self._parse_table_config()
+
+        # Initialize filename sanitizer
+        self.sanitizer = self._setup_sanitizer()
 
     def _load_config(self) -> Dict[str, Any]:
         """
@@ -204,8 +210,45 @@ class CSVToMSSQLLoader:
             table_naming=tl.get('table_naming', 'filename'),
             custom_table_names=tl.get('custom_table_names', {}),
             create_indexes=tl.get('create_indexes', {}),
-            dtype_overrides=tl.get('dtype_overrides', {})
+            dtype_overrides=tl.get('dtype_overrides', {}),
+            enable_sanitization=tl.get('enable_sanitization', True)
         )
+
+    def _setup_sanitizer(self) -> FilenameSanitizer:
+        """
+        Setup filename sanitizer based on configuration.
+
+        Returns:
+            Configured FilenameSanitizer instance
+        """
+        # Get sanitization config if it exists
+        sanitization_config = self.config.get('filename_sanitization', {})
+
+        # Build sanitization rules
+        rules_kwargs = {}
+
+        if 'use_pascal_case' in sanitization_config:
+            rules_kwargs['use_pascal_case'] = sanitization_config['use_pascal_case']
+
+        if 'max_length' in sanitization_config:
+            rules_kwargs['max_length'] = sanitization_config['max_length']
+
+        if 'custom_patterns' in sanitization_config:
+            rules_kwargs['strip_patterns'] = SanitizationRules().strip_patterns + sanitization_config['custom_patterns']
+
+        if 'custom_replacements' in sanitization_config:
+            rules_kwargs['custom_replacements'] = sanitization_config['custom_replacements']
+
+        # Create sanitization rules
+        if rules_kwargs:
+            rules = SanitizationRules(**rules_kwargs)
+            sanitizer = FilenameSanitizer(rules)
+        else:
+            # Use default sanitizer
+            sanitizer = FilenameSanitizer()
+
+        self.logger.debug("Filename sanitizer initialized")
+        return sanitizer
 
     def _create_connection_string(self) -> str:
         """
@@ -363,17 +406,34 @@ class CSVToMSSQLLoader:
             csv_filename: Name of the CSV file
 
         Returns:
-            Table name to use
+            Table name to use (sanitized if enabled)
         """
         if self.table_config.table_naming == 'custom':
             # Use custom mapping if available
-            return self.table_config.custom_table_names.get(
+            table_name = self.table_config.custom_table_names.get(
                 csv_filename,
                 Path(csv_filename).stem  # Fallback to filename without extension
             )
         else:
             # Use filename without extension
-            return Path(csv_filename).stem
+            table_name = Path(csv_filename).stem
+
+        # Apply sanitization if enabled
+        if self.table_config.enable_sanitization:
+            original_name = table_name
+            table_name = self.sanitizer.sanitize(csv_filename)
+
+            # Log if name was changed
+            if original_name != table_name:
+                self.logger.info(f"Sanitized table name: '{original_name}' → '{table_name}'")
+
+            # Validate the sanitized name
+            if not self.sanitizer.validate_table_name(table_name):
+                self.logger.warning(
+                    f"Sanitized table name '{table_name}' may not be valid for SQL Server"
+                )
+
+        return table_name
 
     def load_dataframe_to_sql(
         self,

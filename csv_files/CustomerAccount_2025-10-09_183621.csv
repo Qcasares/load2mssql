@@ -1,0 +1,6 @@
+CustomerID,AccountNumber,FirstName,LastName,Email,Balance,Status,CreatedDate
+1001,ACC-10001,John,Smith,john.smith@email.com,15000.50,Active,2024-01-15
+1002,ACC-10002,Jane,Doe,jane.doe@email.com,23000.75,Active,2024-02-20
+1003,ACC-10003,Bob,Johnson,bob.j@email.com,5000.25,Inactive,2024-03-10
+1004,ACC-10004,Alice,Williams,alice.w@email.com,45000.00,Active,2024-04-05
+1005,ACC-10005,Charlie,Brown,charlie.b@email.com,12500.30,Active,2024-05-12
