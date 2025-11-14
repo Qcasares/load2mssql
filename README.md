@@ -4,6 +4,7 @@ A robust, production-ready Python script for dynamically loading CSV files into 
 
 ## Features
 
+- **Filename Sanitization**: Modular, reusable sanitization to extract clean table names from timestamped/versioned filenames
 - **Dynamic Metadata Removal**: Automatically skip header and footer rows containing metadata
 - **Flexible Authentication**: Support for both Windows (Trusted) and SQL Server authentication
 - **Configurable File Selection**: Load all CSV files or only specific files via YAML configuration
@@ -216,16 +217,21 @@ csv_processing:
 
 ```
 load2mssql/
-├── load_csv_to_mssql.py    # Main script
-├── config.yaml              # Configuration file
-├── requirements.txt         # Python dependencies
-├── README.md               # This file
-├── .gitignore              # Git ignore rules
-├── csv_files/              # Default CSV input folder
-│   ├── sales.csv
+├── load_csv_to_mssql.py         # Main loader script
+├── filename_sanitizer.py        # Modular filename sanitization module
+├── test_sanitization.py         # Sanitization testing utility
+├── config.yaml                  # Configuration file
+├── requirements.txt             # Python dependencies
+├── README.md                    # This file
+├── FILENAME_SANITIZATION.md     # Detailed sanitization documentation
+├── .gitignore                   # Git ignore rules
+├── csv_files/                   # Default CSV input folder
+│   ├── CustomerAccount_2025-10-09_183621.csv
+│   ├── OrderHistory_20251114_093000.csv
+│   ├── sales_data.csv
 │   ├── customers.csv
 │   └── products.csv
-└── csv_loader.log          # Log file (generated)
+└── csv_loader.log               # Log file (generated)
 ```
 
 ## Logging
@@ -319,6 +325,28 @@ csv_processing:
   skip_header_rows: 3
   skip_footer_rows: 2
 ```
+
+### Example 5: Filename Sanitization
+
+For CSV files with timestamps in filenames:
+
+```yaml
+table_loading:
+  enable_sanitization: true  # Enabled by default
+
+filename_sanitization:
+  use_pascal_case: true
+  custom_patterns:
+    - "_export$"
+    - "_production$"
+```
+
+**Result:**
+- `CustomerAccount_2025-10-09_183621.csv` → Table: `CustomerAccount`
+- `OrderHistory_20251114_093000.csv` → Table: `OrderHistory`
+- `sales_data.csv` → Table: `SalesData`
+
+For detailed information, see [FILENAME_SANITIZATION.md](FILENAME_SANITIZATION.md)
 
 ## Troubleshooting
 
