@@ -46,6 +46,7 @@ class DatabaseConfig:
     driver: str
     username: Optional[str] = None
     password: Optional[str] = None
+    port: Optional[int] = 1433  # Default SQL Server port
     timeout: int = 30
     fast_executemany: bool = True
 
@@ -181,6 +182,7 @@ class CSVToMSSQLLoader:
             driver=db['driver'],
             username=db.get('username'),
             password=db.get('password'),
+            port=db.get('port', 1433),
             timeout=db.get('timeout', 30),
             fast_executemany=db.get('fast_executemany', True)
         )
@@ -296,10 +298,15 @@ class CSVToMSSQLLoader:
         db = self.db_config
         driver = quote_plus(db.driver)
 
+        # Build server string with port if specified
+        server_str = db.server
+        if db.port and db.port != 1433:  # Only add port if non-default
+            server_str = f"{db.server},{db.port}"
+
         if db.auth_mode.lower() == 'trusted':
             # Windows Authentication
             conn_str = (
-                f"mssql+pyodbc://@{db.server}/{db.database}"
+                f"mssql+pyodbc://@{server_str}/{db.database}"
                 f"?driver={driver}&Trusted_Connection=yes"
                 f"&timeout={db.timeout}"
             )
@@ -311,7 +318,7 @@ class CSVToMSSQLLoader:
             username = quote_plus(db.username)
             password = quote_plus(db.password)
             conn_str = (
-                f"mssql+pyodbc://{username}:{password}@{db.server}/{db.database}"
+                f"mssql+pyodbc://{username}:{password}@{server_str}/{db.database}"
                 f"?driver={driver}&timeout={db.timeout}"
             )
 

@@ -7,6 +7,10 @@ database:
   # SQL Server instance (use 'localhost' or '127.0.0.1' for local instance)
   server: "localhost"
 
+  # Port number (default: 1433 for SQL Server, leave empty for default)
+  # Specify custom port if SQL Server is running on non-standard port
+  port: 1433
+
   # Database name where tables will be created/updated
   database: "YourDatabase"
 
